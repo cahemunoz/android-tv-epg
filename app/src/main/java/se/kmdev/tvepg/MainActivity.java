@@ -3,12 +3,9 @@ package se.kmdev.tvepg;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Toast;
 
 import se.kmdev.epg.EPG;
@@ -45,6 +42,11 @@ public class MainActivity extends AppCompatActivity {
             public void onResetButtonClicked() {
                 epg.recalculateAndRedraw(true);
             }
+
+            @Override
+            public void onEventKeyEnter(EPGEvent epgEvent) {
+                Toast.makeText(MainActivity.this, epgEvent.getTitle() + " clicked", Toast.LENGTH_SHORT).show();
+            }
         });
         // Do initial load of data.
         new AsyncLoadEPGData(epg).execute();
@@ -56,20 +58,23 @@ public class MainActivity extends AppCompatActivity {
         switch (keyCode) {
             case KeyEvent.KEYCODE_DPAD_DOWN:
                 epg.moveDown();
-                break;
+                return true;
             case KeyEvent.KEYCODE_DPAD_UP:
                 epg.moveUp();
-                break;
+                return true;
 
             case KeyEvent.KEYCODE_DPAD_RIGHT:
                 epg.moveRight();
-                break;
+                return true;
 
             case KeyEvent.KEYCODE_DPAD_LEFT:
                 epg.moveLeft();
-                break;
+                return true;
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+                epg.currentEventKeyEnter();
+                return true;
         }
-        return true;
+        return false;
     }
 
 

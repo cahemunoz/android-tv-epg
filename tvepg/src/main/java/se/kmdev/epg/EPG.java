@@ -806,4 +806,10 @@ public class EPG extends ViewGroup {
             }
         }
     }
+
+    public void currentEventKeyEnter() {
+        if(mClickListener != null)
+            mClickListener.onEventKeyEnter(currentProgram);
+    }
+
 }

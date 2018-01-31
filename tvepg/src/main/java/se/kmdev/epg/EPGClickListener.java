@@ -13,4 +13,6 @@ public interface EPGClickListener {
     void onEventClicked(int channelPosition, int programPosition, EPGEvent epgEvent);
 
     void onResetButtonClicked();
+
+    void onEventKeyEnter(EPGEvent current);
 }
