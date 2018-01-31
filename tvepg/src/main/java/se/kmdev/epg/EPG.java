@@ -82,6 +82,7 @@ public class EPG extends ViewGroup {
     private EPGData epgData = null;
     private EPGEvent currentProgram = null;
     private Integer currentChannelPosition = null;
+    boolean drawCurrentTimeLine = false;
 
     public EPG(Context context) {
         this(context, null);
@@ -136,6 +137,7 @@ public class EPG extends ViewGroup {
         options.outWidth = mResetButtonSize;
         options.outHeight = mResetButtonSize;
         mResetButtonIcon = BitmapFactory.decodeResource(getResources(), R.drawable.reset, options);
+
     }
 
     @Override
@@ -154,7 +156,8 @@ public class EPG extends ViewGroup {
             drawChannelListItems(canvas, drawingRect);
             drawEvents(canvas, drawingRect);
             drawTimebar(canvas, drawingRect);
-            drawTimeLine(canvas, drawingRect);
+            if(drawCurrentTimeLine)
+                drawTimeLine(canvas, drawingRect);
             drawResetButton(canvas, drawingRect);
 
             // If scroller is scrolling/animating do scroll. This applies when doing a fling.
@@ -324,7 +327,7 @@ public class EPG extends ViewGroup {
         setEventDrawingRectangle(channelPosition, event.getStart(), event.getEnd(), drawingRect);
 
         // Background
-        mPaint.setColor(event.isCurrent() ? mEventLayoutBackgroundCurrent : mEventLayoutBackground);
+        mPaint.setColor(event.isCurrent() && drawCurrentTimeLine ? mEventLayoutBackgroundCurrent : mEventLayoutBackground);
 
         if (event.isSelected())
             mPaint.setColor(mEventLayoutSelected);
@@ -594,6 +597,10 @@ public class EPG extends ViewGroup {
         int programPosition = getProgramPosition(currentChannelPosition, Calendar.getInstance().getTimeInMillis());
         currentProgram = epgData.getEvent(currentChannelPosition, programPosition);
         currentProgram.setSelected(true);
+    }
+
+    public void setDrawTimeLine(boolean drawTimeLine) {
+        this.drawCurrentTimeLine = drawTimeLine;
     }
 
     /**
