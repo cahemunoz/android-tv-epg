@@ -752,44 +752,52 @@ public class EPG extends ViewGroup {
 
 
     public void moveRight() {
-        gotoProgram(currentChannelPosition, currentProgram.getEnd() + 1);
-        invalidate();
-        int x = getXFrom(currentProgram.getEnd());
-        int programAreaX = calculateProgramsHitArea().right + getScrollX();
-        if (x > programAreaX) {
-            scrollBy(x - programAreaX, 0);
+        if (currentProgram != null) {
+            gotoProgram(currentChannelPosition, currentProgram.getEnd() + 1);
+            invalidate();
+            int x = getXFrom(currentProgram.getEnd());
+            int programAreaX = calculateProgramsHitArea().right + getScrollX();
+            if (x > programAreaX) {
+                scrollBy(x - programAreaX, 0);
+            }
         }
     }
 
     public void moveLeft() {
-        gotoProgram(currentChannelPosition, currentProgram.getStart() - 1);
-        invalidate();
-        int x = getXFrom(currentProgram.getStart());
-        int programAreaX = calculateProgramsHitArea().left + getScrollX();
-        if (x < programAreaX) {
-            scrollBy(x - programAreaX, 0);
+        if (currentProgram != null) {
+            gotoProgram(currentChannelPosition, currentProgram.getStart() - 1);
+            invalidate();
+            int x = getXFrom(currentProgram.getStart());
+            int programAreaX = calculateProgramsHitArea().left + getScrollX();
+            if (x < programAreaX) {
+                scrollBy(x - programAreaX, 0);
+            }
         }
     }
 
     public void moveDown() {
-        long time = (currentProgram.getStart() + currentProgram.getEnd()) / 2;
-        gotoProgram(currentChannelPosition + 1, time);
-        invalidate();
-        int y = getTopFrom(currentChannelPosition);
-        int programAreaY = calculateProgramsHitArea().bottom + getScrollY() - mChannelLayoutHeight;
-        if (y > programAreaY) {
-            scrollBy(0, y - programAreaY);
+        if (currentProgram != null) {
+            long time = (currentProgram.getStart() + currentProgram.getEnd()) / 2;
+            gotoProgram(currentChannelPosition + 1, time);
+            invalidate();
+            int y = getTopFrom(currentChannelPosition);
+            int programAreaY = calculateProgramsHitArea().bottom + getScrollY() - mChannelLayoutHeight;
+            if (y > programAreaY) {
+                scrollBy(0, y - programAreaY);
+            }
         }
     }
 
     public void moveUp() {
-        long time = (currentProgram.getStart() + currentProgram.getEnd()) / 2;
-        gotoProgram(currentChannelPosition - 1, time);
-        invalidate();
-        int y = getTopFrom(currentChannelPosition);
-        int programAreaY = calculateProgramsHitArea().top + getScrollY();
-        if (y < programAreaY) {
-            scrollBy(0, y - programAreaY);
+        if (currentProgram != null) {
+            long time = (currentProgram.getStart() + currentProgram.getEnd()) / 2;
+            gotoProgram(currentChannelPosition - 1, time);
+            invalidate();
+            int y = getTopFrom(currentChannelPosition);
+            int programAreaY = calculateProgramsHitArea().top + getScrollY();
+            if (y < programAreaY) {
+                scrollBy(0, y - programAreaY);
+            }
         }
     }
 
@@ -808,7 +816,7 @@ public class EPG extends ViewGroup {
     }
 
     public void currentEventKeyEnter() {
-        if(mClickListener != null)
+        if (currentProgram != null && mClickListener != null)
             mClickListener.onEventKeyEnter(currentProgram);
     }
 
