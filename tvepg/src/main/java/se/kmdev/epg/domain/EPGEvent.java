@@ -3,41 +3,17 @@ package se.kmdev.epg.domain;
 /**
  * Created by Kristoffer.
  */
-public class EPGEvent {
+public interface EPGEvent {
 
-    private final long start;
-    private final long end;
-    private final String title;
-    private boolean selected;
+    long getStart();
 
-    public EPGEvent(long start, long end, String title) {
-        this.start = start;
-        this.end = end;
-        this.title = title;
-        this.selected = false;
-    }
+    long getEnd();
 
-    public long getStart() {
-        return start;
-    }
+    String getTitle();
 
-    public long getEnd() {
-        return end;
-    }
+    boolean isCurrent();
 
-    public String getTitle() {
-        return title;
-    }
+    boolean isSelected();
 
-    public boolean isCurrent() {
-        long now = System.currentTimeMillis();
-        return now >= start && now <= end;
-    }
-
-    public boolean isSelected() {
-        return selected;
-    }
-    public void setSelected(boolean selected) {
-        this.selected = selected;
-    }
+    void setSelected(boolean selected);
 }

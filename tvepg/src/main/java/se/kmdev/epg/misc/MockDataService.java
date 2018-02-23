@@ -10,7 +10,9 @@ import java.util.Random;
 
 import se.kmdev.epg.EPG;
 import se.kmdev.epg.domain.EPGChannel;
+import se.kmdev.epg.domain.EPGChannelImpl;
 import se.kmdev.epg.domain.EPGEvent;
+import se.kmdev.epg.domain.EPGEventImpl;
 
 /**
  * Created by Kristoffer on 15-05-24.
@@ -50,7 +52,7 @@ public class MockDataService {
         long nowMillis = System.currentTimeMillis();
 
         for (int i=0 ; i < 20 ; i++) {
-            EPGChannel epgChannel = new EPGChannel(availableChannelLogos.get(i % 5),
+            EPGChannel epgChannel = new EPGChannelImpl(availableChannelLogos.get(i % 5),
                     "Channel " + (i+1), Integer.toString(i));
 
             result.put(epgChannel, createEvents(epgChannel, nowMillis));
@@ -69,7 +71,7 @@ public class MockDataService {
 
         while (currentTime <= epgEnd) {
             long eventEnd = getEventEnd(currentTime);
-            EPGEvent epgEvent = new EPGEvent(currentTime, eventEnd, availableEventTitles.get(randomBetween(0, 6)));
+            EPGEvent epgEvent = new EPGEventImpl(currentTime, eventEnd, availableEventTitles.get(randomBetween(0, 6)));
             result.add(epgEvent);
             currentTime = eventEnd;
         }

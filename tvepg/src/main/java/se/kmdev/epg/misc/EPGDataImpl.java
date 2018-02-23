@@ -2,7 +2,6 @@ package se.kmdev.epg.misc;
 
 import com.google.common.collect.Lists;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 

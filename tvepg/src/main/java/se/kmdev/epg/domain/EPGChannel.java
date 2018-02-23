@@ -3,27 +3,11 @@ package se.kmdev.epg.domain;
 /**
  * Created by Kristoffer.
  */
-public class EPGChannel {
+public interface EPGChannel {
 
-    private final String channelID;
-    private final String name;
-    private final String imageURL;
+    String getChannelID() ;
 
-    public EPGChannel(String imageURL, String name, String channelID) {
-        this.imageURL = imageURL;
-        this.name = name;
-        this.channelID = channelID;
-    }
+    String getName();
 
-    public String getChannelID() {
-        return channelID;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getImageURL() {
-        return imageURL;
-    }
+    String getImageURL();
 }
