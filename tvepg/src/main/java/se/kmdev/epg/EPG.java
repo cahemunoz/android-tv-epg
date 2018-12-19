@@ -4,8 +4,12 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
@@ -23,6 +27,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
+import se.kmdev.epg.domain.EPGChannel;
 import se.kmdev.epg.domain.EPGEvent;
 import se.kmdev.epg.misc.EPGUtil;
 
@@ -49,9 +54,12 @@ public class EPG extends ViewGroup {
     private final GestureDetector mGestureDetector;
 
     private final int mChannelLayoutMargin;
+    private final int mChannelLayoutMarginHorizontal;
     private final int mChannelLayoutPadding;
     private final int mChannelLayoutHeight;
     private final int mChannelLayoutWidth;
+    private final int mChannelLayoutRoundedCorner;
+    private final int mChannelItemStrokeWidth;
     private final int mChannelLayoutBackground;
     private final int mEventLayoutSelected;
     private final int mEventLayoutBackground;
@@ -62,6 +70,11 @@ public class EPG extends ViewGroup {
     private final int mTimeBarLineColor;
     private final int mTimeBarHeight;
     private final int mTimeBarTextSize;
+    private final int mArrowWidth;
+    private Drawable mLeftArrow;
+    private Drawable mRightArrow;
+    private boolean mShowTimebarIndicator;
+    private boolean mShowResetButton;
 
     private final int mResetButtonSize;
     private final int mResetButtonMargin;
@@ -82,7 +95,7 @@ public class EPG extends ViewGroup {
     private EPGData epgData = null;
     private EPGEvent currentProgram = null;
     private Integer currentChannelPosition = null;
-    boolean drawCurrentTimeLine = false;
+    boolean drawCurrentTimeLine = true;
 
     public EPG(Context context) {
         this(context, null);
@@ -114,10 +127,13 @@ public class EPG extends ViewGroup {
         mEPGBackground = getResources().getColor(R.color.epg_background);
 
         mChannelLayoutMargin = getResources().getDimensionPixelSize(R.dimen.epg_channel_layout_margin);
+        mChannelLayoutMarginHorizontal = getResources().getDimensionPixelSize(R.dimen.epg_channel_layout_margin_horizontal);
         mChannelLayoutPadding = getResources().getDimensionPixelSize(R.dimen.epg_channel_layout_padding);
         mChannelLayoutHeight = getResources().getDimensionPixelSize(R.dimen.epg_channel_layout_height);
         mChannelLayoutWidth = getResources().getDimensionPixelSize(R.dimen.epg_channel_layout_width);
         mChannelLayoutBackground = getResources().getColor(R.color.epg_channel_layout_background);
+        mChannelItemStrokeWidth = getResources().getDimensionPixelSize(R.dimen.epg_channel_item_stroke_width);
+        mChannelLayoutRoundedCorner = getResources().getDimensionPixelSize(R.dimen.epg_channel_layout_rounded_corner);
 
         mEventLayoutSelected = getResources().getColor(R.color.epg_event_layout_selected);
         mEventLayoutBackground = getResources().getColor(R.color.epg_event_layout_background);
@@ -132,6 +148,12 @@ public class EPG extends ViewGroup {
 
         mResetButtonSize = getResources().getDimensionPixelSize(R.dimen.epg_reset_button_size);
         mResetButtonMargin = getResources().getDimensionPixelSize(R.dimen.epg_reset_button_margin);
+        mLeftArrow = getResources().getDrawable(R.drawable.ic_chevron_left, null);
+        mRightArrow = getResources().getDrawable(R.drawable.ic_chevron_right, null);
+        mArrowWidth = getResources().getDimensionPixelSize(R.dimen.epg_arrows_width);
+
+        mShowTimebarIndicator = true;
+        mShowResetButton = false;
 
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.outWidth = mResetButtonSize;
@@ -155,10 +177,10 @@ public class EPG extends ViewGroup {
 
             drawChannelListItems(canvas, drawingRect);
             drawEvents(canvas, drawingRect);
+            drawArrows(canvas, drawingRect);
             drawTimebar(canvas, drawingRect);
-            if(drawCurrentTimeLine)
-                drawTimeLine(canvas, drawingRect);
-            drawResetButton(canvas, drawingRect);
+            if(drawCurrentTimeLine) drawTimeLine(canvas, drawingRect);
+            if(mShowResetButton) drawResetButton(canvas, drawingRect);
 
             // If scroller is scrolling/animating do scroll. This applies when doing a fling.
             if (mScroller.computeScrollOffset()) {
@@ -208,18 +230,19 @@ public class EPG extends ViewGroup {
         drawingRect.right = drawingRect.left + getWidth();
         drawingRect.bottom = drawingRect.top + mChannelLayoutMargin;
 
+
         // Bottom stroke
         mPaint.setColor(mEPGBackground);
         canvas.drawRect(drawingRect, mPaint);
     }
 
     private void drawTimebar(Canvas canvas, Rect drawingRect) {
-        drawingRect.left = getScrollX() + mChannelLayoutWidth + mChannelLayoutMargin;
+        drawingRect.left = getScrollX() + mChannelLayoutWidth;
         drawingRect.top = getScrollY();
         drawingRect.right = drawingRect.left + getWidth();
         drawingRect.bottom = drawingRect.top + mTimeBarHeight;
 
-        mClipRect.left = getScrollX() + mChannelLayoutWidth + mChannelLayoutMargin;
+        mClipRect.left = getScrollX() + mChannelLayoutWidth;
         mClipRect.top = getScrollY();
         mClipRect.right = getScrollX() + getWidth();
         mClipRect.bottom = mClipRect.top + mTimeBarHeight;
@@ -258,19 +281,25 @@ public class EPG extends ViewGroup {
         drawingRect.right = drawingRect.left + mChannelLayoutWidth;
         drawingRect.bottom = drawingRect.top + mTimeBarHeight;
 
-        // Background
-        mPaint.setColor(mChannelLayoutBackground);
-        canvas.drawRect(drawingRect, mPaint);
+        if(mShowTimebarIndicator) {
+            // Background
+            mPaint.setColor(mChannelLayoutBackground);
+            canvas.drawRect(drawingRect, mPaint);
+            // Text
+            mPaint.setColor(mEventLayoutTextColor);
+            mPaint.setTextSize(mTimeBarTextSize);
+            mPaint.setTextAlign(Paint.Align.CENTER);
+//            canvas.drawText(EPGUtil.getWeekdayName(mTimeLowerBoundary),
+//                    drawingRect.left + ((drawingRect.right - drawingRect.left) / 2),
+//                    drawingRect.top + (((drawingRect.bottom - drawingRect.top) / 2) + (mTimeBarTextSize / 2)), mPaint);
 
-        // Text
-        mPaint.setColor(mEventLayoutTextColor);
-        mPaint.setTextSize(mTimeBarTextSize);
-        mPaint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText(EPGUtil.getWeekdayName(mTimeLowerBoundary),
-                drawingRect.left + ((drawingRect.right - drawingRect.left) / 2),
-                drawingRect.top + (((drawingRect.bottom - drawingRect.top) / 2) + (mTimeBarTextSize / 2)), mPaint);
+            mPaint.setTextAlign(Paint.Align.LEFT);
+        } else {
+            mPaint.setColor(mEPGBackground);
+            canvas.drawRect(drawingRect, mPaint);
+        }
 
-        mPaint.setTextAlign(Paint.Align.LEFT);
+
     }
 
     private void drawTimeLine(Canvas canvas, Rect drawingRect) {
@@ -295,9 +324,9 @@ public class EPG extends ViewGroup {
         for (int pos = firstPos; pos <= lastPos; pos++) {
 
             // Set clip rectangle
-            mClipRect.left = getScrollX() + mChannelLayoutWidth + mChannelLayoutMargin;
+            mClipRect.left = getScrollX() + mChannelLayoutWidth + mChannelLayoutMargin + mArrowWidth;
             mClipRect.top = getTopFrom(pos);
-            mClipRect.right = getScrollX() + getWidth();
+            mClipRect.right = getScrollX() + getWidth() - mArrowWidth;
             mClipRect.bottom = mClipRect.top + mChannelLayoutHeight;
 
             canvas.save();
@@ -332,7 +361,7 @@ public class EPG extends ViewGroup {
         if (event.isSelected())
             mPaint.setColor(mEventLayoutSelected);
 
-        canvas.drawRect(drawingRect, mPaint);
+        canvas.drawRoundRect(new RectF(drawingRect), mChannelLayoutRoundedCorner, mChannelLayoutRoundedCorner, mPaint);
 
         // Add left and right inner padding
         drawingRect.left += mChannelLayoutPadding;
@@ -356,7 +385,7 @@ public class EPG extends ViewGroup {
     private void setEventDrawingRectangle(final int channelPosition, final long start, final long end, final Rect drawingRect) {
         drawingRect.left = getXFrom(start);
         drawingRect.top = getTopFrom(channelPosition);
-        drawingRect.right = getXFrom(end) - mChannelLayoutMargin;
+        drawingRect.right = getXFrom(end) - mChannelLayoutMarginHorizontal;
         drawingRect.bottom = drawingRect.top + mChannelLayoutHeight;
     }
 
@@ -367,7 +396,7 @@ public class EPG extends ViewGroup {
         mMeasuringRect.right = drawingRect.left + mChannelLayoutWidth;
         mMeasuringRect.bottom = mMeasuringRect.top + getHeight();
 
-        mPaint.setColor(mChannelLayoutBackground);
+        mPaint.setColor(mEPGBackground);
         canvas.drawRect(mMeasuringRect, mPaint);
 
         final int firstPos = getFirstVisibleChannelPosition();
@@ -378,15 +407,92 @@ public class EPG extends ViewGroup {
         }
     }
 
+
+    private void drawArrows(Canvas canvas, Rect drawingRect) {
+        final int firstPos = getFirstVisibleChannelPosition();
+        final int lastPos = getLastVisibleChannelPosition();
+
+        for (int pos = firstPos; pos <= lastPos; pos++) {
+            drawLeftArrow(canvas, pos, drawingRect);
+            drawRightArrow(canvas, pos, drawingRect);
+        }
+
+        mPaint.setColor(mEPGBackground);
+
+        drawingRect.left = getScrollX() + mChannelLayoutWidth;
+        drawingRect.top = getScrollY();
+        drawingRect.right = drawingRect.left + mArrowWidth + mChannelLayoutMargin;
+        drawingRect.bottom = drawingRect.top + mTimeBarHeight;
+        canvas.drawRect(drawingRect, mPaint);
+
+        drawingRect.left = getScrollX() + getWidth() - mArrowWidth;
+        drawingRect.top = getScrollY();
+        drawingRect.right = drawingRect.left + mArrowWidth;
+        drawingRect.bottom = drawingRect.top + mTimeBarHeight;
+        canvas.drawRect(drawingRect, mPaint);
+
+    }
+
+    private void drawLeftArrow(Canvas canvas, int position, Rect drawingRect) {
+        drawingRect.left = getScrollX() + mChannelLayoutWidth;
+        drawingRect.top = getTopFrom(position);
+        drawingRect.right = drawingRect.left + mArrowWidth;
+        drawingRect.bottom = drawingRect.top + mChannelLayoutHeight;
+        mLeftArrow.setBounds(drawingRect);
+        mLeftArrow.draw(canvas);
+
+    }
+
+    private void drawRightArrow(Canvas canvas, int position, Rect drawingRect) {
+        drawingRect.left = getScrollX() + getWidth() - mArrowWidth;
+        drawingRect.top = getTopFrom(position);
+        drawingRect.right = drawingRect.left + mArrowWidth;
+        drawingRect.bottom = drawingRect.top + mChannelLayoutHeight;
+        mRightArrow.setBounds(drawingRect);
+        mRightArrow.draw(canvas);
+    }
+
+
+
     private void drawChannelItem(final Canvas canvas, int position, Rect drawingRect) {
         drawingRect.left = getScrollX();
         drawingRect.top = getTopFrom(position);
         drawingRect.right = drawingRect.left + mChannelLayoutWidth;
         drawingRect.bottom = drawingRect.top + mChannelLayoutHeight;
 
+        EPGChannel channel = epgData.getChannel(position);
+
+        if(channel.isSelected())
+            mPaint.setColor(mEventLayoutSelected);
+        else
+            mPaint.setColor(mChannelLayoutBackground);
+
+        canvas.drawRoundRect(new RectF(drawingRect), mChannelLayoutRoundedCorner, mChannelLayoutRoundedCorner , mPaint);
+
+
         // Loading channel image into target for
         final String imageURL = epgData.getChannel(position).getImageURL();
 
+        String channelName = String.format("%03d %s", Integer.valueOf(channel.getChannelID()), channel.getName());
+
+
+        // Text
+        mPaint.setColor(mEventLayoutTextColor);
+        mPaint.setTextSize(mEventLayoutTextSize);
+
+        // Move drawing.top so text will be centered (text is drawn bottom>up)
+        mPaint.getTextBounds(channelName, 0, channelName.length(), mMeasuringRect);
+        drawingRect.top += (((drawingRect.bottom - drawingRect.top) / 2) + (mMeasuringRect.height() / 2));
+
+        String title = channelName;
+        title = title.substring(0,
+                mPaint.breakText(title, true, drawingRect.right - drawingRect.left, null));
+        canvas.drawText(title, drawingRect.left + 10, drawingRect.top, mPaint);
+
+
+
+
+        /*
         if (mChannelImageCache.containsKey(imageURL)) {
             Bitmap image = mChannelImageCache.get(imageURL);
             drawingRect = getDrawingRectForChannelImage(drawingRect, image);
@@ -417,7 +523,7 @@ public class EPG extends ViewGroup {
                 EPGUtil.loadImageInto(getContext(), imageURL, smallestSide, smallestSide, mChannelImageTargetCache.get(imageURL));
             }
 
-        }
+        }*/
     }
 
     private Rect getDrawingRectForChannelImage(Rect drawingRect, Bitmap image) {
@@ -513,7 +619,7 @@ public class EPG extends ViewGroup {
     }
 
     private long calculateMillisPerPixel() {
-        return HOURS_IN_VIEWPORT_MILLIS / (getResources().getDisplayMetrics().widthPixels - mChannelLayoutWidth - mChannelLayoutMargin);
+        return HOURS_IN_VIEWPORT_MILLIS / (getResources().getDisplayMetrics().widthPixels - mChannelLayoutWidth - mChannelLayoutMargin - 2 * mArrowWidth);
     }
 
     private int getXPositionStart() {
@@ -540,8 +646,8 @@ public class EPG extends ViewGroup {
         mMeasuringRect.top = mTimeBarHeight;
         int visibleChannelsHeight = epgData.getChannelCount() * (mChannelLayoutHeight + mChannelLayoutMargin);
         mMeasuringRect.bottom = visibleChannelsHeight < getHeight() ? visibleChannelsHeight : getHeight();
-        mMeasuringRect.left = mChannelLayoutWidth;
-        mMeasuringRect.right = getWidth();
+        mMeasuringRect.left = mChannelLayoutWidth + mArrowWidth;
+        mMeasuringRect.right = getWidth() - mArrowWidth;
         return mMeasuringRect;
     }
 
@@ -595,8 +701,8 @@ public class EPG extends ViewGroup {
         this.epgData = epgData;
         currentChannelPosition = getFirstVisibleChannelPosition();
         int programPosition = getProgramPosition(currentChannelPosition, Calendar.getInstance().getTimeInMillis());
+        this.epgData.setSelection(currentChannelPosition, programPosition);
         currentProgram = epgData.getEvent(currentChannelPosition, programPosition);
-        currentProgram.setSelected(true);
     }
 
     public void setDrawTimeLine(boolean drawTimeLine) {
@@ -696,8 +802,8 @@ public class EPG extends ViewGroup {
                     int programPosition = getProgramPosition(channelPosition, getTimeFrom(getScrollX() + x - calculateProgramsHitArea().left));
                     if (programPosition != -1) {
                         epgData.cleanSelection();
+                        epgData.setSelection(channelPosition, programPosition);
                         EPGEvent event = epgData.getEvent(channelPosition, programPosition);
-                        event.setSelected(true);
                         currentProgram = event;
                         currentChannelPosition = channelPosition;
                         invalidate();
@@ -814,8 +920,8 @@ public class EPG extends ViewGroup {
             int programPosition = getProgramPosition(channelPosition, time);
             if (programPosition != -1) {
                 epgData.cleanSelection();
+                epgData.setSelection(channelPosition, programPosition);
                 EPGEvent event = epgData.getEvent(channelPosition, programPosition);
-                event.setSelected(true);
                 currentProgram = event;
                 currentChannelPosition = channelPosition;
             }

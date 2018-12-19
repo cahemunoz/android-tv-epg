@@ -23,4 +23,6 @@ public interface EPGData {
     boolean hasData();
 
     void cleanSelection();
+
+    void setSelection(int channelPosition, int programPosition);
 }

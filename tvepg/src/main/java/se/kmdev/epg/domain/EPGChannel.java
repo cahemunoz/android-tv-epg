@@ -10,4 +10,8 @@ public interface EPGChannel {
     String getName();
 
     String getImageURL();
+
+    boolean isSelected();
+
+    void setSelected(boolean selected);
 }

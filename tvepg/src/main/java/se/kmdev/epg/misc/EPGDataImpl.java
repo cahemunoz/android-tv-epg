@@ -47,10 +47,20 @@ public class EPGDataImpl implements EPGData {
 
     @Override
     public void cleanSelection() {
+        for (EPGChannel channel: this.channels )
+            if(channel.isSelected()) channel.setSelected(false);
+
         for (List<EPGEvent> channelEvents : this.events) {
             for (EPGEvent event : channelEvents) {
                 if(event.isSelected()) event.setSelected(false);
             }
         }
+
+    }
+
+    @Override
+    public void setSelection(int channelPosition, int programPosition) {
+        getChannel(channelPosition).setSelected(true);
+        getEvent(channelPosition, programPosition).setSelected(true);
     }
 }
