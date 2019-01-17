@@ -17,6 +17,8 @@ public class EPGDataImpl implements EPGData {
 
     private List<EPGChannel> channels = Lists.newArrayList();
     private List<List<EPGEvent>> events = Lists.newArrayList();
+    private EPGEvent highlightedEvent = null;
+
 
     public EPGDataImpl(Map<EPGChannel, List<EPGEvent>> data) {
         channels = Lists.newArrayList(data.keySet());
@@ -61,6 +63,12 @@ public class EPGDataImpl implements EPGData {
     @Override
     public void setSelection(int channelPosition, int programPosition) {
         getChannel(channelPosition).setSelected(true);
-        getEvent(channelPosition, programPosition).setSelected(true);
+        highlightedEvent = getEvent(channelPosition, programPosition);
+        highlightedEvent.setSelected(true);
+    }
+
+    @Override
+    public EPGEvent getHighlightedEvent() {
+        return highlightedEvent;
     }
 }

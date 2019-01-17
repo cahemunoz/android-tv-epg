@@ -25,4 +25,6 @@ public interface EPGData {
     void cleanSelection();
 
     void setSelection(int channelPosition, int programPosition);
+
+    EPGEvent getHighlightedEvent();
 }
