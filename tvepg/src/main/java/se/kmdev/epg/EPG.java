@@ -363,6 +363,8 @@ public class EPG extends ViewGroup {
 
         canvas.drawRoundRect(new RectF(drawingRect), mChannelLayoutRoundedCorner, mChannelLayoutRoundedCorner, mPaint);
 
+
+        setEventDrawingTitleRectangle(channelPosition, event.getStart(), event.getEnd(), drawingRect);
         // Add left and right inner padding
         drawingRect.left += mChannelLayoutPadding;
         drawingRect.right -= mChannelLayoutPadding;
@@ -384,6 +386,20 @@ public class EPG extends ViewGroup {
 
     private void setEventDrawingRectangle(final int channelPosition, final long start, final long end, final Rect drawingRect) {
         drawingRect.left = getXFrom(start);
+        drawingRect.top = getTopFrom(channelPosition);
+        drawingRect.right = getXFrom(end) - mChannelLayoutMarginHorizontal;
+        drawingRect.bottom = drawingRect.top + mChannelLayoutHeight;
+    }
+
+    private void setEventDrawingTitleRectangle(final int channelPosition, final long start, final long end, final Rect drawingRect) {
+        int startXFromProgramsArea = getStartXFromProgramsArea();
+        int leftStart = getXFrom(start);
+
+        if(leftStart < startXFromProgramsArea)
+            drawingRect.left = startXFromProgramsArea;
+        else
+            drawingRect.left = leftStart;
+
         drawingRect.top = getTopFrom(channelPosition);
         drawingRect.right = getXFrom(end) - mChannelLayoutMarginHorizontal;
         drawingRect.bottom = drawingRect.top + mChannelLayoutHeight;
@@ -624,6 +640,14 @@ public class EPG extends ViewGroup {
 
     private int getXPositionStart() {
         return getXFrom(System.currentTimeMillis() - (HOURS_IN_VIEWPORT_MILLIS / 2));
+    }
+
+    private int getStartXFromProgramsArea() {
+        return getScrollX() + mChannelLayoutMargin  + mChannelLayoutWidth + mChannelLayoutMargin + mArrowWidth;
+    }
+
+    private int getEndXFromProgramsArea() {
+        return getScrollX() + getWidth();
     }
 
     private void resetBoundaries() {
@@ -898,6 +922,17 @@ public class EPG extends ViewGroup {
             if (y > programAreaY) {
                 scrollBy(0, y - programAreaY);
             }
+
+            int x = getXFrom(currentProgram.getStart());
+            int programAreaLeftX = calculateProgramsHitArea().left + getScrollX();
+            if (x < programAreaLeftX) {
+                scrollBy(x - programAreaLeftX, 0);
+            }
+
+            int programAreaRightX = calculateProgramsHitArea().right + getScrollX();
+            if (x > programAreaRightX) {
+                scrollBy(x - programAreaRightX, 0);
+            }
         }
     }
 
@@ -910,6 +945,17 @@ public class EPG extends ViewGroup {
             int programAreaY = calculateProgramsHitArea().top + getScrollY();
             if (y < programAreaY) {
                 scrollBy(0, y - programAreaY);
+            }
+
+            int x = getXFrom(currentProgram.getStart());
+            int programAreaLeftX = calculateProgramsHitArea().left + getScrollX();
+            if (x < programAreaLeftX) {
+                scrollBy(x - programAreaLeftX, 0);
+            }
+
+            int programAreaRightX = calculateProgramsHitArea().right + getScrollX() - mResetButtonMargin;
+            if (x > programAreaRightX) {
+                scrollBy(x - programAreaRightX, 0);
             }
         }
     }
